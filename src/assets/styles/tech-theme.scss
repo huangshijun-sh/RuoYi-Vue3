@@ -1,0 +1,176 @@
+// 科技感主题变量定义
+
+// 主色调 - 青色/蓝色系
+$tech-primary: #00f2ff;
+$tech-secondary: #007aff;
+$tech-bg-dark: #0b1120;
+$tech-bg-card: #151e32;
+$tech-text-main: #ffffff;
+$tech-text-sub: #a0aec0;
+$tech-success: #00ff9d;
+$tech-warning: #ffb800;
+$tech-danger: #ff4d4d;
+
+// 边框与发光
+$tech-border: rgba(0, 242, 255, 0.3);
+$tech-glow: 0 0 10px rgba(0, 242, 255, 0.5);
+$tech-glow-strong: 0 0 20px rgba(0, 242, 255, 0.8);
+$tech-glow-inset: inset 0 0 15px rgba(0, 242, 255, 0.2);
+
+// 动画曲线
+$tech-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+// 混合宏：科技感卡片
+@mixin tech-card {
+  background: rgba(21, 30, 50, 0.8);
+  border: 1px solid $tech-border;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  color: $tech-text-main;
+  transition: $tech-transition;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, $tech-primary, transparent);
+    opacity: 0.5;
+  }
+
+  &:hover {
+    border-color: $tech-primary;
+    box-shadow: 0 0 20px rgba(0, 242, 255, 0.15), inset 0 0 10px rgba(0, 242, 255, 0.05);
+    transform: translateY(-2px);
+    
+    &::before {
+      opacity: 1;
+      box-shadow: 0 0 10px $tech-primary;
+    }
+  }
+}
+
+// 混合宏：科技感按钮
+@mixin tech-button {
+  background: rgba(0, 122, 255, 0.2);
+  border: 1px solid $tech-primary;
+  color: $tech-primary;
+  font-weight: 600;
+  letter-spacing: 1px;
+  transition: $tech-transition;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  &:hover {
+    background: rgba(0, 242, 255, 0.2);
+    box-shadow: 0 0 15px rgba(0, 242, 255, 0.4);
+    text-shadow: 0 0 5px $tech-primary;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &.is-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(100%);
+    
+    &:hover {
+      box-shadow: none;
+      background: rgba(0, 122, 255, 0.1);
+    }
+  }
+}
+
+// 混合宏：发光文字
+@mixin tech-text-glow {
+  text-shadow: 0 0 8px rgba(0, 242, 255, 0.6);
+}
+
+// 动画：脉冲
+@keyframes tech-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 242, 255, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(0, 242, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 242, 255, 0);
+  }
+}
+
+// 动画：扫描线
+@keyframes tech-scan {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 0% 100%;
+  }
+}
+
+// 通用类
+.tech-theme-container {
+  background-color: $tech-bg-dark;
+  min-height: 100vh;
+  color: $tech-text-main;
+  font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+}
+
+.tech-header {
+  @include tech-text-glow;
+  color: $tech-primary;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 24px;
+    background: $tech-primary;
+    margin-right: 12px;
+    box-shadow: 0 0 8px $tech-primary;
+  }
+}
+
+.tech-card {
+  @include tech-card;
+  padding: 20px;
+  border-radius: 4px;
+}
+
+.tech-btn {
+  @include tech-button;
+  padding: 8px 20px;
+  border-radius: 2px;
+}
+
+// 滚动条样式
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: $tech-bg-dark;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 242, 255, 0.3);
+  border-radius: 4px;
+  
+  &:hover {
+    background: rgba(0, 242, 255, 0.5);
+  }
+}
