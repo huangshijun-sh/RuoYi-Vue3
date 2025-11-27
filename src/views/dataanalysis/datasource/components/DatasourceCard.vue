@@ -14,14 +14,17 @@
           <span class="subtitle">{{ datasource.dbType }}</span>
         </div>
       </div>
-      <el-tag
-        :type="getStatusType()"
-        size="small"
-        effect="dark"
-        class="status-tag"
-      >
-        {{ getStatusText() }}
-      </el-tag>
+      <div class="header-right">
+        <el-tag
+          :type="getStatusType()"
+          size="small"
+          effect="dark"
+          class="status-tag"
+        >
+          {{ getStatusText() }}
+        </el-tag>
+        <div class="sort-badge" v-if="datasource.sortOrder !== undefined">{{ datasource.sortOrder }}</div>
+      </div>
     </div>
     
     <div class="card-body">
@@ -245,10 +248,34 @@ function getStatusText() {
       }
     }
 
+    .header-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
     .status-tag {
       flex-shrink: 0;
       font-weight: bold;
       box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .sort-badge {
+      min-width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(0, 242, 255, 0.15) 0%, rgba(0, 200, 255, 0.1) 100%);
+      border: 1px solid rgba(0, 242, 255, 0.3);
+      border-radius: 6px;
+      color: $tech-primary;
+      font-size: 12px;
+      font-weight: bold;
+      font-family: 'JetBrains Mono', 'Consolas', monospace;
+      padding: 0 6px;
+      box-shadow: 0 2px 8px rgba(0, 242, 255, 0.2);
     }
   }
 

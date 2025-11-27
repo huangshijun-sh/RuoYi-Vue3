@@ -5,14 +5,19 @@
         <el-input v-model="form.datasourceName" placeholder="请输入数据源名称" />
       </el-form-item>
       <el-row>
-        <el-col :span="12">
+        <el-col :span="8">
           <el-form-item label="数据库类型" prop="dbType">
             <el-select v-model="form.dbType" placeholder="请选择类型" disabled>
               <el-option label="SQL Server" value="sqlserver" />
             </el-select>
           </el-form-item>
         </el-col>
-        <el-col :span="12">
+        <el-col :span="8">
+          <el-form-item label="显示顺序" prop="sortOrder">
+            <el-input-number v-model="form.sortOrder" :min="0" controls-position="right" style="width: 100%" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
           <el-form-item label="状态" prop="status">
             <el-radio-group v-model="form.status">
               <el-radio
@@ -102,6 +107,7 @@ const form = ref({
   dbUsername: undefined,
   dbPassword: undefined,
   status: "0",
+  sortOrder: 0,
   remark: undefined
 })
 
@@ -120,6 +126,10 @@ const rules = {
   ],
   dbUsername: [
     { required: true, message: "用户名不能为空", trigger: "blur" }
+  ],
+  sortOrder: [
+    { required: true, message: "显示顺序不能为空", trigger: "blur" },
+    { type: 'number', min: 0, message: "显示顺序必须大于或等于0", trigger: "blur" }
   ],
   dbPassword: [
     {
@@ -157,6 +167,7 @@ function reset() {
     dbUsername: undefined,
     dbPassword: undefined,
     status: "0",
+    sortOrder: 0,
     remark: undefined
   }
   proxy.resetForm("datasourceRef")

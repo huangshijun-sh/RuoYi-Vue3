@@ -68,7 +68,7 @@
     <div v-if="viewMode === 'table'">
       <el-table v-loading="loading" :data="datasourceList" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="ID" align="center" prop="datasourceId" width="60" />
+        <el-table-column label="显示顺序" align="center" prop="sortOrder" width="100" />
         <el-table-column label="数据源名称" align="center" prop="datasourceName" :show-overflow-tooltip="true" />
         <el-table-column label="类型" align="center" prop="dbType" width="100">
           <template #default="scope">
