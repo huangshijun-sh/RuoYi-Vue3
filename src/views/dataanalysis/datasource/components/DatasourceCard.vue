@@ -47,7 +47,7 @@
           <span class="label">
             <el-icon><Coin /></el-icon> 库名
           </span>
-          <span class="value" :title="datasource.dbName">{{ datasource.dbName }}</span>
+          <span class="value highlight" :title="datasource.dbName">{{ datasource.dbName }}</span>
         </div>
       </div>
     </div>
@@ -141,48 +141,43 @@ function getStatusText() {
 <style lang="scss" scoped>
 @import "@/assets/styles/tech-theme.scss";
 
-.datasource-card {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  cursor: pointer;
-  background: linear-gradient(145deg, rgba(21, 30, 50, 0.6) 0%, rgba(11, 17, 32, 0.7) 100%);
-  border: 1px solid rgba(0, 242, 255, 0.15);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-  border-radius: 12px;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  .datasource-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    background: linear-gradient(135deg, #1e2838 0%, #151d29 100%);
+    border: 1px solid rgba(64, 158, 255, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-  // 装饰背景
-  .card-bg-decoration {
-    position: absolute;
-    top: -50px;
-    right: -50px;
-    width: 150px;
-    height: 150px;
-    background: radial-gradient(circle, rgba(0, 242, 255, 0.1) 0%, transparent 70%);
-    border-radius: 50%;
-    z-index: 0;
-    transition: all 0.5s ease;
-  }
-
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 40px rgba(0, 242, 255, 0.15);
-    border-color: rgba(0, 242, 255, 0.5);
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+      border-color: rgba(64, 158, 255, 0.6);
+      
+      .card-bg-decoration {
+        transform: scale(1.1);
+        opacity: 0.8;
+      }
+    }
     
+    // ... (保持装饰背景不变，或者稍微调整) ...
     .card-bg-decoration {
-      transform: scale(1.2);
-      opacity: 0.8;
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 180px;
+      height: 180px;
+      background: radial-gradient(circle, rgba(64, 158, 255, 0.08) 0%, transparent 70%);
+      border-radius: 50%;
+      z-index: 0;
+      transition: all 0.5s ease;
+      pointer-events: none;
     }
-    
-    .card-header .icon-wrapper {
-      box-shadow: 0 0 15px rgba(0, 242, 255, 0.4);
-      border-color: $tech-primary;
-      transform: rotate(10deg);
-    }
-  }
   
   .card-header {
     position: relative;
@@ -309,26 +304,29 @@ function getStatusText() {
       }
       
       .label {
-        color: rgba(255, 255, 255, 0.4);
-        font-size: 12px;
-        margin-bottom: 4px;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 13px;
+        margin-bottom: 6px;
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 6px;
+        font-weight: 500;
       }
       
       .value {
-        color: $tech-text-main;
+        color: #ffffff;
         font-family: 'JetBrains Mono', 'Consolas', monospace;
-        font-size: 14px;
+        font-size: 15px;
         letter-spacing: 0.5px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        font-weight: 600;
+        padding-left: 2px;
         
         &.highlight {
-          color: lighten($tech-primary, 10%);
-          text-shadow: 0 0 5px rgba(0, 242, 255, 0.3);
+          color: #409eff;
+          text-shadow: 0 0 10px rgba(64, 158, 255, 0.3);
         }
       }
     }

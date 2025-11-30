@@ -26,19 +26,19 @@
           </el-select>
         </div>
         <div class="actions">
-           <el-button 
-             type="primary" 
-             :disabled="selectedIds.size === 0" 
-             icon="Download" 
+           <el-button
+             type="primary"
+             :disabled="!currentDatasourceId || selectedIds.size === 0"
+             icon="Download"
              @click="handleExportSelected"
            >
              导出选中 ({{ selectedIds.size }})
            </el-button>
-           <el-button 
-             type="success" 
-             :disabled="total === 0" 
-             icon="Download" 
-             plain 
+           <el-button
+             type="success"
+             :disabled="!currentDatasourceId || total === 0 || !hasAnyFilter"
+             icon="Download"
+             plain
              @click="handleExportAll"
            >
              导出全部查询结果
@@ -67,16 +67,30 @@
       />
     </div>
     <el-empty v-else description="请先选择一个数据源进行浏览" />
+
+    <!-- Export Confirm Dialog -->
+    <export-confirm
+      ref="confirmRef"
+      :datasource-name="currentDatasourceName"
+      :record-count="exportRecordCount"
+      :export-type="exportType"
+      :unit-names="exportUnitNames"
+      @confirm="onConfirmExport"
+    />
   </div>
 </template>
 
-<script setup name="DataBrowse">
-import { ref, reactive, onMounted } from 'vue';
+<script setup name="Browse">
+import { ref, reactive, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { listDatasources, getFilterOptions, listData } from '@/api/dataanalysis/browse';
+import { createExportTask } from '@/api/dataanalysis/export';
 import FilterBar from './components/FilterBar.vue';
 import DataTable from './components/DataTable.vue';
+import ExportConfirm from '../export/components/ExportConfirm.vue';
 import { ElMessage } from 'element-plus';
 
+const router = useRouter();
 const datasourceList = ref([]);
 const currentDatasourceId = ref(null);
 const filterOptions = reactive({
@@ -97,6 +111,27 @@ const queryParams = reactive({
   quickSearch: ''
 });
 
+// Export related state
+const confirmRef = ref(null);
+const exportType = ref('selected');
+const exportRecordCount = ref(0);
+const exportUnitNames = ref([]);
+
+const currentDatasourceName = computed(() => {
+  const ds = datasourceList.value.find(d => d.datasourceId === currentDatasourceId.value);
+  return ds ? ds.datasourceName : '';
+});
+
+// 检查是否有任何筛选条件
+const hasAnyFilter = computed(() => {
+  return (
+    (queryParams.years && queryParams.years.length > 0) ||
+    (queryParams.unitCode && queryParams.unitCode.trim() !== '') ||
+    (queryParams.electronicDataName && queryParams.electronicDataName.trim() !== '') ||
+    (queryParams.quickSearch && queryParams.quickSearch.trim() !== '')
+  );
+});
+
 // Load datasources on mount
 onMounted(() => {
   getDatasourceList();
@@ -104,8 +139,6 @@ onMounted(() => {
 
 function getDatasourceList() {
   listDatasources().then(res => {
-    // Depending on backend implementation, it might be res.data or res.rows
-    // Assuming res.data for a non-paginated list dropdown
     datasourceList.value = res.data || [];
   });
 }
@@ -146,7 +179,6 @@ function getList() {
     ...queryParams
   };
   
-  // Handle array params for query string if needed, mostly handled by request.js/axios
   listData(params).then(res => {
     dataList.value = res.rows || [];
     total.value = res.total || 0;
@@ -160,7 +192,6 @@ function getList() {
 
 function handleSearch(params) {
   queryParams.pageNum = 1;
-  // Update queryParams with values from FilterBar
   Object.assign(queryParams, params);
   getList();
 }
@@ -177,7 +208,7 @@ function handleReset() {
 function handleSelectionChange({ type, row, rows, isSelected }) {
   if (type === 'single') {
     if (isSelected) {
-      selectedIds.value.add(row.electronicDataCode);
+      selectedIds.value.add(row.electronicDataCode); // Assuming electronicDataCode is the ID
     } else {
       selectedIds.value.delete(row.electronicDataCode);
     }
@@ -193,13 +224,64 @@ function handleSelectionChange({ type, row, rows, isSelected }) {
 }
 
 function handleExportSelected() {
-  // Placeholder for US3
-  ElMessage.success(`准备导出 ${selectedIds.value.size} 条记录 (功能开发中)`);
+  exportType.value = 'selected';
+  exportRecordCount.value = selectedIds.value.size;
+
+  // Get distinct unit names from selected records
+  const selectedRecords = dataList.value.filter(row => selectedIds.value.has(row.electronicDataCode));
+  const unitNamesSet = new Set(selectedRecords.map(row => row.unitName).filter(name => name));
+  exportUnitNames.value = Array.from(unitNamesSet);
+
+  confirmRef.value.open();
 }
 
 function handleExportAll() {
-  // Placeholder for US3
-  ElMessage.success(`准备导出全部 ${total.value} 条记录 (功能开发中)`);
+  if (total.value > 10000) {
+    ElMessage.warning('导出数据量超过10000条，建议缩小筛选范围');
+    return;
+  }
+  exportType.value = 'all';
+  exportRecordCount.value = total.value;
+
+  // Get distinct unit names from current data list (as sample)
+  const unitNamesSet = new Set(dataList.value.map(row => row.unitName).filter(name => name));
+  exportUnitNames.value = Array.from(unitNamesSet);
+
+  confirmRef.value.open();
+}
+
+function onConfirmExport(done) {
+  // 生成任务名称: 数据源名称_导出类型_时间戳
+  const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+  const typeLabel = exportType.value === 'selected' ? '选中导出' : '全部导出';
+  const taskName = `${currentDatasourceName.value}_${typeLabel}_${timestamp}`;
+
+  const data = {
+    datasourceId: currentDatasourceId.value,
+    taskName: taskName,
+    exportType: exportType.value === 'selected' ? '1' : '2',  // 1=选中导出, 2=全部导出
+    totalRecords: exportRecordCount.value,
+    unitNames: JSON.stringify(exportUnitNames.value)  // 单位名称列表
+  };
+
+  if (exportType.value === 'selected') {
+    data.selectedIds = JSON.stringify(Array.from(selectedIds.value));
+  } else {
+    // Pass current filter criteria
+    data.filterSnapshot = JSON.stringify({ ...queryParams });
+  }
+
+    createExportTask(data).then(res => {
+    // Clear selection after successful export (both selected and all export)
+    selectedIds.value.clear();
+
+    // 传递任务ID给确认对话框，让它显示进度区域
+    // 不再自动跳转到进度页面，由用户在确认对话框中选择
+    done(res.taskId);
+  }).catch(() => {
+    // 任务创建失败，传递null关闭对话框
+    done(null);
+  });
 }
 </script>
 
@@ -227,4 +309,3 @@ function handleExportAll() {
   }
 }
 </style>
-

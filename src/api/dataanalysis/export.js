@@ -5,7 +5,8 @@ export function createExportTask(data) {
   return request({
     url: '/dataanalysis/export',
     method: 'post',
-    data: data
+    data: data,
+    timeout: 300000  // 设置5分钟超时,因为创建导出任务可能需要较长时间(验证数据、创建数据库记录等)
   })
 }
 

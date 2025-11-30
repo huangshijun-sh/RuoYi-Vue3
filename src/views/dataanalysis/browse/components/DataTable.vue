@@ -73,6 +73,17 @@ watch(() => props.dataList, (newVal) => {
   });
 }, { deep: true });
 
+// Watch selectedIds changes to clear selection when empty
+watch(() => props.selectedIds.size, (newSize) => {
+  if (newSize === 0) {
+    nextTick(() => {
+      if (tableRef.value) {
+        tableRef.value.clearSelection();
+      }
+    });
+  }
+});
+
 function handleSelect(selection, row) {
   const isSelected = selection.some(item => item.electronicDataCode === row.electronicDataCode);
   emit('selection-change', { type: 'single', row, isSelected });

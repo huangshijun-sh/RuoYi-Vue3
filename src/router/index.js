@@ -157,6 +157,20 @@ export const dynamicRoutes = [
         meta: { title: '修改生成配置', activeMenu: '/tool/gen' }
       }
     ]
+  },
+  {
+    path: '/dataanalysis/export/progress',
+    component: Layout,
+    hidden: true,
+    permissions: ['data:export:list'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/dataanalysis/export/progress'),
+        name: 'ExportProgress',
+        meta: { title: '导出进度', activeMenu: '/dataanalysis/export' }
+      }
+    ]
   }
 ]
 
