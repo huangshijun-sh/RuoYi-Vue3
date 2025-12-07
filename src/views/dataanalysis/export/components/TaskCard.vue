@@ -16,6 +16,14 @@
         <span class="value">{{ task.datasourceName || '-' }}</span>
       </div>
       <div class="info-item">
+        <span class="label">导出格式:</span>
+        <span class="value">
+          <el-tag v-if="task.exportFormat === 'excel'" type="success" size="small" effect="plain">Excel</el-tag>
+          <el-tag v-else-if="task.exportFormat === 'bak' || !task.exportFormat" type="warning" size="small" effect="plain">备份文件</el-tag>
+          <span v-else>{{ task.exportFormat }}</span>
+        </span>
+      </div>
+      <div class="info-item">
         <span class="label">记录数:</span>
         <span class="value">{{ task.totalRecords || '-' }}</span>
       </div>

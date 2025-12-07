@@ -125,11 +125,12 @@
       <el-row :gutter="20">
         <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="item in datasourceList" :key="item.datasourceId">
           <div class="card-wrapper">
-            <datasource-card 
-              :datasource="item" 
+            <datasource-card
+              :datasource="item"
               @edit="handleUpdate"
               @delete="handleDelete"
               @test="handleTest"
+              @log="handleLog"
             />
           </div>
         </el-col>
@@ -153,14 +154,22 @@
       :form-data="form"
       @success="getList"
     />
+
+    <!-- 连接日志对话框 -->
+    <datasource-log
+      v-model="logOpen"
+      :datasource-id="currentDatasourceId"
+      :datasource-name="currentDatasourceName"
+    />
   </div>
 </template>
 
 <script setup name="Datasource">
 import { ref, reactive, toRefs, getCurrentInstance } from 'vue'
-import { listDatasource, getDatasource, delDatasource, testDatasource } from "@/api/dataanalysis/datasource"
+import { listDatasource, getDatasource, delDatasource, testDatasource, testDatasourceSilent } from "@/api/dataanalysis/datasource"
 import DatasourceCard from './components/DatasourceCard.vue'
 import DatasourceForm from './components/DatasourceForm.vue'
+import DatasourceLog from './components/DatasourceLog.vue'
 import { Notebook, Menu } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
@@ -177,6 +186,9 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref("")
 const form = ref({})
+const logOpen = ref(false)
+const currentDatasourceId = ref(null)
+const currentDatasourceName = ref('')
 
 const data = reactive({
   queryParams: {
@@ -202,15 +214,15 @@ function getList() {
     total.value = response.total
     loading.value = false
 
-    // 自动测试所有数据源的连接状态
+    // 自动测试所有数据源
     autoTestAllDatasources()
   })
 }
 
-/** 自动测试所有数据源 */
+/** 自动测试所有数据源（静默模式，不显示错误弹窗） */
 function autoTestAllDatasources() {
   datasourceList.value.forEach(datasource => {
-    testDatasource(datasource.datasourceId).then(() => {
+    testDatasourceSilent(datasource.datasourceId).then(() => {
       // 测试成功
       datasource.connectionStatus = 'connected'
     }).catch(() => {
@@ -265,27 +277,12 @@ function handleTest(row, callback) {
     proxy.$modal.closeLoading()
     // 更新数据源的连接状态为"已连接"
     row.connectionStatus = 'connected'
-    // 后端已返回"连接成功: …"或具体信息,前端直接展示
-    proxy.$modal.msgSuccess(response.msg || "连接成功")
+    // 不再显示弹窗提示，连接结果通过状态标签和日志查看
   }).catch(error => {
     proxy.$modal.closeLoading()
     // 更新数据源的连接状态为"断开"
     row.connectionStatus = 'disconnected'
-    // 处理各种错误情况
-    let msg = "连接失败"
-    if (error?.response?.data?.msg) {
-      msg = error.response.data.msg
-    } else if (error?.message) {
-      // 处理网络错误和超时
-      if (error.message.includes('timeout')) {
-        msg = "连接超时：无法连接到数据库服务器，请检查网络和数据库配置"
-      } else if (error.message.includes('Network Error')) {
-        msg = "网络错误：请检查后端服务是否正常运行"
-      } else {
-        msg = "连接失败：" + error.message
-      }
-    }
-    proxy.$modal.msgError(msg)
+    // 不再显示弹窗提示，连接结果通过状态标签和日志查看
   }).finally(() => {
     if (callback) callback()
   })
@@ -300,6 +297,13 @@ function handleDelete(row) {
     getList()
     proxy.$modal.msgSuccess("删除成功")
   }).catch(() => {})
+}
+
+/** 查看日志操作 */
+function handleLog(row) {
+  currentDatasourceId.value = row.datasourceId
+  currentDatasourceName.value = row.datasourceName
+  logOpen.value = true
 }
 
 getList()

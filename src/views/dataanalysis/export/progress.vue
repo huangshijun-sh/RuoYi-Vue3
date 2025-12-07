@@ -9,14 +9,14 @@
       </template>
       
       <div v-if="task" class="task-content">
-        <h2 class="status-title">{{ getStatusLabel(task.status) }}</h2>
-        <p class="status-desc">{{ task.errorMessage || getStatusDesc(task.status) }}</p>
+        <h2 class="status-title">{{ getStatusLabel(currentStatus) }}</h2>
+        <p class="status-desc">{{ task.errorMessage || getStatusDesc(currentStatus) }}</p>
         
         <div class="progress-container">
           <el-progress 
             type="dashboard" 
             :percentage="task.progressPercent" 
-            :status="getProgressStatus(task.status)"
+            :status="getProgressStatus(currentStatus)"
             :width="200"
           >
             <template #default="{ percentage }">
@@ -36,24 +36,24 @@
           </div>
         </div>
         
-        <div class="current-action" v-if="task.status === 'processing'">
+        <div class="current-action" v-if="currentStatus === 'processing'">
           <span class="label">正在执行:</span>
-          <span class="value">{{ task.progressStep || '处理中...' }}</span>
+          <span class="value">{{ task.progressSteps || '处理中...' }}</span>
         </div>
         
         <div class="actions mt-4">
           <el-button 
-            v-if="task.status === 'success'" 
+            v-if="currentStatus === 'success'" 
             type="primary" 
             size="large" 
             icon="Download" 
             @click="handleDownload"
           >
-            下载备份文件
+            下载Excel文件
           </el-button>
           
           <el-button 
-            v-if="task.status === 'processing'" 
+            v-if="currentStatus === 'processing'" 
             type="danger" 
             size="large" 
             icon="VideoPause" 
@@ -63,7 +63,7 @@
           </el-button>
           
           <el-button 
-            v-if="['success', 'failed', 'cancelled'].includes(task.status)" 
+            v-if="['success', 'failed', 'cancelled'].includes(currentStatus)" 
             size="large" 
             @click="goBack"
           >
@@ -90,6 +90,20 @@ const taskId = route.query.taskId;
 const task = ref(null);
 const loading = ref(true);
 const timer = ref(null);
+
+// 状态映射
+const statusMap = {
+  '0': 'pending',
+  '1': 'processing',
+  '2': 'success',
+  '3': 'failed',
+  '4': 'cancelled'
+};
+
+const currentStatus = computed(() => {
+  if (!task.value) return 'pending';
+  return statusMap[task.value.taskStatus] || task.value.taskStatus;
+});
 
 const activeStep = computed(() => {
   if (!task.value) return 0;
@@ -137,12 +151,14 @@ function fetchTask(showLoading = true) {
     task.value = res.data;
     loading.value = false;
     
+    const status = statusMap[task.value.taskStatus] || task.value.taskStatus;
+    
     // Stop polling if terminal state
-    if (['success', 'failed', 'cancelled'].includes(task.value.status)) {
+    if (['success', 'failed', 'cancelled'].includes(status)) {
       stopPolling();
-      if (task.value.status === 'success') {
+      if (status === 'success') {
         ElMessage.success('导出完成，请下载文件');
-      } else if (task.value.status === 'failed') {
+      } else if (status === 'failed') {
         ElMessage.error('导出失败: ' + (task.value.errorMessage || '未知错误'));
       }
     }

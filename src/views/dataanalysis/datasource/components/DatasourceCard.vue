@@ -59,6 +59,11 @@
         <span>测试</span>
       </div>
       <div class="divider"></div>
+      <div class="action-btn" @click.stop="$emit('log', datasource)">
+        <el-icon><Document /></el-icon>
+        <span>日志</span>
+      </div>
+      <div class="divider"></div>
       <div class="action-btn" @click.stop="$emit('edit', datasource)">
         <el-icon><Edit /></el-icon>
         <span>编辑</span>
@@ -74,7 +79,7 @@
 
 <script setup>
 import { ref, defineOptions } from 'vue'
-import { Connection, Edit, Delete, Loading, Monitor, Sort, Coin } from '@element-plus/icons-vue'
+import { Connection, Edit, Delete, Loading, Monitor, Sort, Coin, Document } from '@element-plus/icons-vue'
 
 defineOptions({
   name: 'DatasourceCard',
@@ -85,7 +90,8 @@ defineOptions({
     Loading,
     Monitor,
     Sort,
-    Coin
+    Coin,
+    Document
   }
 })
 
@@ -96,7 +102,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['click', 'edit', 'delete', 'test'])
+const emit = defineEmits(['click', 'edit', 'delete', 'test', 'log'])
 const testing = ref(false)
 
 function handleTest() {

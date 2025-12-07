@@ -11,6 +11,12 @@
             <el-option label="已取消" value="cancelled" />
           </el-select>
         </el-form-item>
+        <el-form-item label="导出格式" prop="exportFormat">
+          <el-select v-model="queryParams.exportFormat" placeholder="全部格式" clearable style="width: 200px">
+            <el-option label="数据库备份" value="bak" />
+            <el-option label="Excel文件" value="excel" />
+          </el-select>
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
@@ -44,6 +50,13 @@
         <el-table-column label="任务ID" prop="taskId" width="80" align="center" />
         <el-table-column label="任务名称" prop="taskName" :show-overflow-tooltip="true" width="280" />
         <el-table-column label="数据源" prop="datasourceName" :show-overflow-tooltip="true" />
+        <el-table-column label="导出格式" prop="exportFormat" width="100" align="center">
+          <template #default="scope">
+            <el-tag v-if="scope.row.exportFormat === 'excel'" type="success" size="small" effect="plain">Excel</el-tag>
+            <el-tag v-else-if="scope.row.exportFormat === 'bak' || !scope.row.exportFormat" type="warning" size="small" effect="plain">备份文件</el-tag>
+            <span v-else>{{ scope.row.exportFormat }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="导出类型" prop="exportType" width="100" align="center">
           <template #default="scope">
             <el-tag v-if="scope.row.exportType === '1'" type="primary" size="small">选中导出</el-tag>
@@ -160,9 +173,9 @@
 </template>
 
 <script setup name="ExportList">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { listExportTasks, cancelExportTask, deleteExportTask, downloadExportFile, getExportTask } from '@/api/dataanalysis/export';
+import { listExportTasks, cancelExportTask, deleteExportTask, downloadExportFile, downloadExcelFile, getExportTask } from '@/api/dataanalysis/export';
 import TaskCard from './components/TaskCard.vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Notebook, Menu } from '@element-plus/icons-vue';
@@ -176,16 +189,57 @@ const logDialogVisible = ref(false);
 const currentLog = ref('');
 const ids = ref([]);
 const multiple = ref(true);
+let pollingTimer = null; // 轮询定时器
 
 const queryParams = reactive({
   pageNum: 1,
   pageSize: 12,
-  status: undefined
+  status: undefined,
+  exportFormat: undefined
+});
+
+// 检查是否有进行中的任务
+const hasProcessingTasks = computed(() => {
+  return taskList.value.some(task => task.taskStatus === '0' || task.taskStatus === '1');
 });
 
 onMounted(() => {
   getList();
+  // 启动轮询
+  startPolling();
 });
+
+onUnmounted(() => {
+  // 清理轮询定时器
+  stopPolling();
+});
+
+// 启动轮询
+function startPolling() {
+  stopPolling(); // 先清理旧的定时器
+  pollingTimer = setInterval(() => {
+    // 只有在有进行中任务时才自动刷新
+    if (hasProcessingTasks.value) {
+      getListSilent();
+    }
+  }, 3000); // 每3秒刷新一次
+}
+
+// 停止轮询
+function stopPolling() {
+  if (pollingTimer) {
+    clearInterval(pollingTimer);
+    pollingTimer = null;
+  }
+}
+
+// 静默获取列表（不显示loading）
+function getListSilent() {
+  listExportTasks(queryParams).then(res => {
+    taskList.value = res.rows;
+    total.value = res.total;
+  });
+}
 
 function getList() {
   loading.value = true;
@@ -205,6 +259,7 @@ function handleQuery() {
 
 function resetQuery() {
   queryParams.status = undefined;
+  queryParams.exportFormat = undefined;
   handleQuery();
 }
 
@@ -216,16 +271,35 @@ function handleView(task) {
 }
 
 function handleDownload(task) {
-  downloadExportFile(task.taskId).then(res => {
-    const blob = new Blob([res]);
-    const fileName = `export_${task.taskId}_${new Date().getTime()}.bak`;
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.download = fileName;
-    link.click();
-    window.URL.revokeObjectURL(link.href);
-    ElMessage.success('开始下载...');
-  });
+  if (task.exportFormat === 'excel') {
+    downloadExcelFile(task.taskId).then(res => {
+      const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      // 如果后端返回了文件名，应该优先使用 content-disposition，这里简单处理使用任务名
+      const fileName = (task.taskName || `export_${task.taskId}`) + '.xlsx';
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = fileName;
+      link.click();
+      window.URL.revokeObjectURL(link.href);
+      ElMessage.success('开始下载Excel文件...');
+    }).catch(error => {
+      ElMessage.error('下载失败: ' + (error.message || '未知错误'));
+    });
+  } else {
+    // 默认为数据库备份文件
+    downloadExportFile(task.taskId).then(res => {
+      const blob = new Blob([res]);
+      const fileName = `export_${task.taskId}_${new Date().getTime()}.bak`;
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = fileName;
+      link.click();
+      window.URL.revokeObjectURL(link.href);
+      ElMessage.success('开始下载备份文件...');
+    }).catch(error => {
+      ElMessage.error('下载失败: ' + (error.message || '未知错误'));
+    });
+  }
 }
 
 function handleCancel(task) {
